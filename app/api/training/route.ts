@@ -10,41 +10,108 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // Ensure all training sessions exist (insert missing ones)
+  // Check if user already has sessions, only insert if missing
+  let existingCount = 0;
   if (useNeon) {
-    // Insert all sessions, ignoring conflicts (ON CONFLICT DO NOTHING)
-    for (const session of trainingPlan) {
-      await sql`
-        INSERT INTO training_sessions 
+    const countResult = await sql`
+      SELECT COUNT(*) as count FROM training_sessions WHERE user_id = ${user.id}
+    `;
+    existingCount = Number(countResult[0].count);
+  } else {
+    const checkStmt = db.prepare('SELECT COUNT(*) as count FROM training_sessions WHERE user_id = ?');
+    existingCount = (checkStmt.get(user.id) as { count: number }).count;
+  }
+
+  // Only insert if no sessions exist (first time setup)
+  if (existingCount === 0) {
+    if (useNeon) {
+      // Batch insert for Neon - insert all sessions
+      for (const session of trainingPlan) {
+        await sql`
+          INSERT INTO training_sessions 
+          (user_id, week_number, week_range, day_name, date, time, session_type, details)
+          VALUES (${user.id}, ${session.weekNumber}, ${session.weekRange}, ${session.dayName}, ${session.date}, ${session.time}, ${session.sessionType}, ${session.details})
+          ON CONFLICT (user_id, week_number, day_name) DO NOTHING
+        `;
+      }
+    } else {
+      // Use INSERT OR IGNORE for SQLite to handle conflicts
+      const insertStmt = db.prepare(`
+        INSERT OR IGNORE INTO training_sessions 
         (user_id, week_number, week_range, day_name, date, time, session_type, details)
-        VALUES (${user.id}, ${session.weekNumber}, ${session.weekRange}, ${session.dayName}, ${session.date}, ${session.time}, ${session.sessionType}, ${session.details})
-        ON CONFLICT (user_id, week_number, day_name) DO NOTHING
-      `;
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+
+      const insertMany = db.transaction((sessions: TrainingSession[]) => {
+        for (const session of sessions) {
+          insertStmt.run(
+            user.id,
+            session.weekNumber,
+            session.weekRange,
+            session.dayName,
+            session.date,
+            session.time,
+            session.sessionType,
+            session.details
+          );
+        }
+      });
+
+      insertMany(trainingPlan);
     }
   } else {
-    // Use INSERT OR IGNORE for SQLite to handle conflicts
-    const insertStmt = db.prepare(`
-      INSERT OR IGNORE INTO training_sessions 
-      (user_id, week_number, week_range, day_name, date, time, session_type, details)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `);
+    // If sessions exist, only insert missing ones (for new weeks added)
+    if (useNeon) {
+      // Get existing session keys
+      const existingSessions = await sql`
+        SELECT week_number, day_name FROM training_sessions WHERE user_id = ${user.id}
+      `;
+      const existingKeys = new Set(
+        existingSessions.map((s: any) => `${s.week_number}-${s.day_name}`)
+      );
 
-    const insertMany = db.transaction((sessions: TrainingSession[]) => {
-      for (const session of sessions) {
-        insertStmt.run(
-          user.id,
-          session.weekNumber,
-          session.weekRange,
-          session.dayName,
-          session.date,
-          session.time,
-          session.sessionType,
-          session.details
-        );
+      // Only insert missing sessions
+      for (const session of trainingPlan) {
+        const key = `${session.weekNumber}-${session.dayName}`;
+        if (!existingKeys.has(key)) {
+          await sql`
+            INSERT INTO training_sessions 
+            (user_id, week_number, week_range, day_name, date, time, session_type, details)
+            VALUES (${user.id}, ${session.weekNumber}, ${session.weekRange}, ${session.dayName}, ${session.date}, ${session.time}, ${session.sessionType}, ${session.details})
+          `;
+        }
       }
-    });
+    } else {
+      // Get existing session keys for SQLite
+      const existingStmt = db.prepare('SELECT week_number, day_name FROM training_sessions WHERE user_id = ?');
+      const existingSessions = existingStmt.all(user.id) as Array<{ week_number: number; day_name: string }>;
+      const existingKeys = new Set(
+        existingSessions.map(s => `${s.week_number}-${s.day_name}`)
+      );
 
-    insertMany(trainingPlan);
+      // Only insert missing sessions
+      const insertStmt = db.prepare(`
+        INSERT INTO training_sessions 
+        (user_id, week_number, week_range, day_name, date, time, session_type, details)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+
+      for (const session of trainingPlan) {
+        const key = `${session.weekNumber}-${session.dayName}`;
+        if (!existingKeys.has(key)) {
+          insertStmt.run(
+            user.id,
+            session.weekNumber,
+            session.weekRange,
+            session.dayName,
+            session.date,
+            session.time,
+            session.sessionType,
+            session.details
+          );
+        }
+      }
+    }
   }
 
   // Get all sessions for the user
