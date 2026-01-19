@@ -83,6 +83,30 @@ export default function TrainingPlan() {
       }
       const data = await response.json();
       setSessions(data.sessions);
+      
+      // Auto-expand weeks that are fully completed
+      const weekMap = new Map<number, TrainingSession[]>();
+      data.sessions.forEach((session: TrainingSession) => {
+        if (!weekMap.has(session.week_number)) {
+          weekMap.set(session.week_number, []);
+        }
+        weekMap.get(session.week_number)!.push(session);
+      });
+      
+      const completedWeeks = new Set<number>();
+      weekMap.forEach((sessions, weekNumber) => {
+        const allCompleted = sessions.every(s => s.completed);
+        if (allCompleted && sessions.length > 0) {
+          completedWeeks.add(weekNumber);
+        }
+      });
+      
+      // Remove completed weeks from collapsed set (they should be expanded)
+      setCollapsedWeeks((prev) => {
+        const newSet = new Set(prev);
+        completedWeeks.forEach(weekNum => newSet.delete(weekNum));
+        return newSet;
+      });
     } catch (error) {
       console.error('Failed to load sessions:', error);
     } finally {
@@ -105,13 +129,28 @@ export default function TrainingPlan() {
       });
 
       if (response.ok) {
-        setSessions((prev) =>
-          prev.map((s) =>
+        setSessions((prev) => {
+          const updated = prev.map((s) =>
             s.week_number === weekNumber && s.day_name === dayName
               ? { ...s, completed: newCompleted, completed_at: newCompleted ? new Date().toISOString() : null }
               : s
-          )
-        );
+          );
+          
+          // Check if this week is now fully completed
+          const weekSessions = updated.filter(s => s.week_number === weekNumber);
+          const allCompleted = weekSessions.length > 0 && weekSessions.every(s => s.completed);
+          
+          // Auto-expand if fully completed
+          if (allCompleted) {
+            setCollapsedWeeks((prevCollapsed) => {
+              const newCollapsed = new Set(prevCollapsed);
+              newCollapsed.delete(weekNumber);
+              return newCollapsed;
+            });
+          }
+          
+          return updated;
+        });
       }
     } catch (error) {
       console.error('Failed to update session:', error);
