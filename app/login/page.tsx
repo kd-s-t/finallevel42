@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -49,29 +50,36 @@ export default function LoginPage() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
-      className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4 py-8"
+      className="flex min-h-screen items-center justify-center bg-[#0A1A2F] px-4 py-8"
     >
       <motion.div
         initial={{ opacity: 0, y: 20, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.4, ease: 'easeOut' }}
-        className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl sm:p-8"
+        className="w-full max-w-md rounded-lg bg-[#0A1A2F] border border-[#00E5FF]/20 p-6 shadow-xl sm:p-8"
       >
-        <motion.h1
+        <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="mb-6 text-center text-2xl font-bold text-gray-800 sm:text-3xl"
+          className="mb-6 flex flex-col items-center"
         >
-          42km Trainer
-        </motion.h1>
+          <Image
+            src="/logo.png"
+            alt="FinalLevel 42"
+            width={200}
+            height={100}
+            priority
+            className="mb-4"
+          />
+        </motion.div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="username" className="block text-sm font-medium text-[#8FA3AD] mb-1">
               Username
             </label>
             <input
@@ -81,7 +89,7 @@ export default function LoginPage() {
               onChange={(e) => setUsername(e.target.value)}
               required
               autoComplete="username"
-              className="w-full rounded-md border border-gray-300 px-3 py-3 text-base focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 touch-manipulation"
+              className="w-full rounded-md border border-[#8FA3AD]/30 bg-[#0A1A2F] text-white px-3 py-3 text-base focus:border-[#00E5FF] focus:outline-none focus:ring-2 focus:ring-[#00E5FF]/50 touch-manipulation"
             />
           </motion.div>
           <motion.div
@@ -89,7 +97,7 @@ export default function LoginPage() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.3 }}
           >
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="password" className="block text-sm font-medium text-[#8FA3AD] mb-1">
               Password
             </label>
             <input
@@ -99,7 +107,7 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               autoComplete={isRegister ? 'new-password' : 'current-password'}
-              className="w-full rounded-md border border-gray-300 px-3 py-3 text-base focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 touch-manipulation"
+              className="w-full rounded-md border border-[#8FA3AD]/30 bg-[#0A1A2F] text-white px-3 py-3 text-base focus:border-[#00E5FF] focus:outline-none focus:ring-2 focus:ring-[#00E5FF]/50 touch-manipulation"
             />
           </motion.div>
           <AnimatePresence>
@@ -109,7 +117,7 @@ export default function LoginPage() {
                 animate={{ opacity: 1, y: 0, height: 'auto' }}
                 exit={{ opacity: 0, y: -10, height: 0 }}
                 transition={{ duration: 0.3 }}
-                className="rounded-md bg-red-50 p-3 text-sm text-red-800 overflow-hidden"
+                className="rounded-md bg-red-900/30 border border-red-500/50 p-3 text-sm text-red-300 overflow-hidden"
               >
                 {error}
               </motion.div>
@@ -120,7 +128,7 @@ export default function LoginPage() {
             whileTap={{ scale: 0.98 }}
             type="submit"
             disabled={loading}
-            className="w-full rounded-md bg-indigo-600 px-4 py-3 text-base font-medium text-white hover:bg-indigo-700 active:bg-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 touch-manipulation"
+            className="w-full rounded-md bg-[#00E5FF] px-4 py-3 text-base font-medium text-[#0A1A2F] hover:bg-[#00E5FF]/80 active:bg-[#00E5FF]/70 focus:outline-none focus:ring-2 focus:ring-[#00E5FF]/50 focus:ring-offset-2 focus:ring-offset-[#0A1A2F] disabled:opacity-50 touch-manipulation"
           >
             {loading ? (
               <motion.span
@@ -140,7 +148,7 @@ export default function LoginPage() {
               setIsRegister(!isRegister);
               setError('');
             }}
-            className="w-full py-2 text-sm text-indigo-600 hover:text-indigo-700 active:text-indigo-800 touch-manipulation"
+            className="w-full py-2 text-sm text-[#00E5FF] hover:text-[#00E5FF]/80 active:text-[#00E5FF]/70 touch-manipulation"
           >
             {isRegister ? 'Already have an account? Login' : "Don't have an account? Register"}
           </motion.button>

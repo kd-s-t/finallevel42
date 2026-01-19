@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import db from './db';
+import { sql, db, useNeon } from './db';
 import { cookies } from 'next/headers';
 
 export interface User {
@@ -17,15 +17,32 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 
 export async function createUser(username: string, password: string): Promise<User> {
   const hashedPassword = await hashPassword(password);
-  const stmt = db.prepare('INSERT INTO users (username, password) VALUES (?, ?)');
-  const result = stmt.run(username, hashedPassword);
-  return { id: Number(result.lastInsertRowid), username };
+  
+  if (useNeon) {
+    const result = await sql`
+      INSERT INTO users (username, password) 
+      VALUES (${username}, ${hashedPassword}) 
+      RETURNING id, username
+    `;
+    return { id: result[0].id, username: result[0].username };
+  } else {
+    const stmt = db.prepare('INSERT INTO users (username, password) VALUES (?, ?)');
+    const result = stmt.run(username, hashedPassword);
+    return { id: Number(result.lastInsertRowid), username };
+  }
 }
 
 export async function getUserByUsername(username: string): Promise<User & { password: string } | null> {
-  const stmt = db.prepare('SELECT * FROM users WHERE username = ?');
-  const user = stmt.get(username) as (User & { password: string }) | undefined;
-  return user || null;
+  if (useNeon) {
+    const result = await sql`
+      SELECT * FROM users WHERE username = ${username}
+    `;
+    return result[0] || null;
+  } else {
+    const stmt = db.prepare('SELECT * FROM users WHERE username = ?');
+    const user = stmt.get(username) as (User & { password: string }) | undefined;
+    return user || null;
+  }
 }
 
 export async function login(username: string, password: string): Promise<User | null> {
@@ -44,9 +61,16 @@ export async function getCurrentUser(): Promise<User | null> {
   
   if (!userId) return null;
 
-  const stmt = db.prepare('SELECT id, username FROM users WHERE id = ?');
-  const user = stmt.get(Number(userId)) as User | undefined;
-  return user || null;
+  if (useNeon) {
+    const result = await sql`
+      SELECT id, username FROM users WHERE id = ${Number(userId)}
+    `;
+    return result[0] || null;
+  } else {
+    const stmt = db.prepare('SELECT id, username FROM users WHERE id = ?');
+    const user = stmt.get(Number(userId)) as User | undefined;
+    return user || null;
+  }
 }
 
 export async function setSession(userId: number) {
