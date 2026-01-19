@@ -38,7 +38,8 @@ export default function TrainingPlan() {
   }, []);
 
   const calculateDaysUntilRace = () => {
-    const raceDate = new Date('2025-07-12');
+    // Race is July 12, 2026
+    const raceDate = new Date('2026-07-12T00:00:00');
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     raceDate.setHours(0, 0, 0, 0);
