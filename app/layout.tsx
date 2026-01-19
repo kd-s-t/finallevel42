@@ -13,11 +13,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "42km Trainer",
+  title: "FinalLevel 42 - Marathon Trainer",
   description: "Marathon training plan tracker",
   icons: {
     icon: '/logo.png',
     apple: '/logo.png',
+    shortcut: '/logo.png',
   },
 };
 
