@@ -84,7 +84,7 @@ export default function TrainingPlan() {
       const data = await response.json();
       setSessions(data.sessions);
       
-      // Auto-expand weeks that are fully completed
+      // Auto-collapse weeks that are fully completed
       const weekMap = new Map<number, TrainingSession[]>();
       data.sessions.forEach((session: TrainingSession) => {
         if (!weekMap.has(session.week_number)) {
@@ -101,10 +101,10 @@ export default function TrainingPlan() {
         }
       });
       
-      // Remove completed weeks from collapsed set (they should be expanded)
+      // Add completed weeks to collapsed set (they should be hidden)
       setCollapsedWeeks((prev) => {
         const newSet = new Set(prev);
-        completedWeeks.forEach(weekNum => newSet.delete(weekNum));
+        completedWeeks.forEach(weekNum => newSet.add(weekNum));
         return newSet;
       });
     } catch (error) {
@@ -140,11 +140,11 @@ export default function TrainingPlan() {
           const weekSessions = updated.filter(s => s.week_number === weekNumber);
           const allCompleted = weekSessions.length > 0 && weekSessions.every(s => s.completed);
           
-          // Auto-expand if fully completed
+          // Auto-collapse if fully completed
           if (allCompleted) {
             setCollapsedWeeks((prevCollapsed) => {
               const newCollapsed = new Set(prevCollapsed);
-              newCollapsed.delete(weekNumber);
+              newCollapsed.add(weekNumber);
               return newCollapsed;
             });
           }
