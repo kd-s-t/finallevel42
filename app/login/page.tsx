@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
@@ -11,7 +11,29 @@ export default function LoginPage() {
   const [isRegister, setIsRegister] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [userCount, setUserCount] = useState<number | null>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    // Fetch user count on mount
+    const fetchUserCount = () => {
+      fetch('/api/users/count', { cache: 'no-store' })
+        .then(res => res.json())
+        .then(data => {
+          if (data.count !== undefined) {
+            setUserCount(data.count);
+          }
+        })
+        .catch(err => console.error('Failed to fetch user count:', err));
+    };
+
+    fetchUserCount();
+    
+    // Refresh count every 10 seconds
+    const interval = setInterval(fetchUserCount, 10000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,6 +94,16 @@ export default function LoginPage() {
             priority
             className="mb-4"
           />
+          {userCount !== null && (
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="text-sm text-[#8FA3AD]"
+            >
+              <span className="text-[#00E5FF] font-semibold">+{userCount}</span> {userCount === 1 ? 'runner' : 'runners'} training and counting
+            </motion.p>
+          )}
         </motion.div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <motion.div
