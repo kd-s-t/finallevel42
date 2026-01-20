@@ -5,17 +5,23 @@ const useNeon = !!databaseUrl &&
                 databaseUrl.startsWith('postgresql://') && 
                 !databaseUrl.includes('your_neon_connection_string');
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let sql: any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let db: any;
 
 if (useNeon) {
   // Neon/Postgres for production
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { neon } = require('@neondatabase/serverless');
   sql = neon(databaseUrl!);
 } else {
   // SQLite for local development
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const Database = require('better-sqlite3');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const path = require('path');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const fs = require('fs');
   
   const dbPath = path.join(process.cwd(), 'data', 'trainer.db');
@@ -85,9 +91,9 @@ export async function initDb() {
     // Add vdot column if it doesn't exist (for existing databases)
     try {
       db.exec(`ALTER TABLE users ADD COLUMN vdot REAL`);
-    } catch (e: any) {
+    } catch (e: unknown) {
       // Column already exists, ignore error
-      if (!e.message?.includes('duplicate column')) {
+      if (e instanceof Error && !e.message?.includes('duplicate column')) {
         console.error('Error adding vdot column:', e);
       }
     }

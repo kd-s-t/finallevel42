@@ -30,7 +30,12 @@ export async function GET() {
         ORDER BY u.username ASC
       `;
 
-      users = result.map((row: any) => {
+      users = result.map((row: {
+        id: number;
+        username: string;
+        total_sessions: number | string;
+        completed_sessions: number | string;
+      }) => {
         const total = Number(row.total_sessions) || 0;
         const completed = Number(row.completed_sessions) || 0;
         return {

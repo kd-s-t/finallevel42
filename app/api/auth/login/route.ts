@@ -37,9 +37,9 @@ export async function POST(request: NextRequest) {
       await setSession(user.id);
       return NextResponse.json({ success: true, user });
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json(
-      { error: error.message || 'Authentication failed' },
+      { error: error instanceof Error ? error.message : 'Authentication failed' },
       { status: 500 }
     );
   }

@@ -4,13 +4,13 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import BottomNav from '@/components/BottomNav';
-import { calculateVDOT, getTrainingPaces, RACE_DISTANCES, parseTimeInput, formatTime, type RaceDistance } from '@/lib/vdot';
+import { calculateVDOT, getTrainingPaces, RACE_DISTANCES, parseTimeInput, type RaceDistance } from '@/lib/vdot';
 
 export default function FitnessPage() {
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<{ id: number; username: string } | null>(null);
   const [savedVDOT, setSavedVDOT] = useState<number | null>(null);
-  const [distance, setDistance] = useState<RaceDistance>('5000');
+  const [distance, setDistance] = useState<RaceDistance | 'custom'>('5000');
+  const [customDistance, setCustomDistance] = useState('');
   const [timeInput, setTimeInput] = useState('');
   const [calculatedVDOT, setCalculatedVDOT] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
@@ -20,6 +20,7 @@ export default function FitnessPage() {
   useEffect(() => {
     checkAuth();
     loadVDOT();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const checkAuth = async () => {
@@ -33,7 +34,7 @@ export default function FitnessPage() {
         router.push('/login');
         return;
       }
-      setUser(data.user);
+      // User authenticated
     } catch (error) {
       router.push('/login');
     } finally {
@@ -73,7 +74,25 @@ export default function FitnessPage() {
       return;
     }
 
-    const distanceMeters = RACE_DISTANCES[distance];
+    let distanceMeters: number;
+    
+    if (distance === 'custom') {
+      if (!customDistance.trim()) {
+        setError('Please enter a custom distance');
+        return;
+      }
+      
+      const distanceKm = parseFloat(customDistance);
+      if (isNaN(distanceKm) || distanceKm <= 0) {
+        setError('Please enter a valid distance in kilometers');
+        return;
+      }
+      
+      distanceMeters = distanceKm * 1000; // Convert km to meters
+    } else {
+      distanceMeters = RACE_DISTANCES[distance];
+    }
+    
     const vdot = calculateVDOT(distanceMeters, timeSeconds);
     
     if (vdot <= 0 || !isFinite(vdot)) {
@@ -167,8 +186,11 @@ export default function FitnessPage() {
               </label>
               <select
                 value={distance}
-                onChange={(e) => setDistance(e.target.value as RaceDistance)}
-                className="w-full rounded-md border border-[#8FA3AD]/30 bg-[#0A1A2F] text-white px-3 py-2 focus:border-[#00E5FF] focus:outline-none focus:ring-2 focus:ring-[#00E5FF]/50"
+                onChange={(e) => {
+                  setDistance(e.target.value as RaceDistance | 'custom');
+                  setCustomDistance('');
+                }}
+                className="w-full rounded-md border border-[#8FA3AD]/30 bg-[#0A1A2F] text-white px-3 py-2 focus:border-[#00E5FF] focus:outline-none focus:ring-2 focus:ring-[#00E5FF]/50 mb-2"
               >
                 <option value="1500">1500m</option>
                 <option value="1600">1 Mile</option>
@@ -178,7 +200,23 @@ export default function FitnessPage() {
                 <option value="10000">10K</option>
                 <option value="21097">Half Marathon</option>
                 <option value="42195">Marathon</option>
+                <option value="custom">Custom Distance</option>
               </select>
+              
+              {distance === 'custom' && (
+                <div className="mt-2">
+                  <input
+                    type="number"
+                    value={customDistance}
+                    onChange={(e) => setCustomDistance(e.target.value)}
+                    placeholder="Distance in kilometers (e.g., 3.6)"
+                    step="0.1"
+                    min="0.1"
+                    className="w-full rounded-md border border-[#8FA3AD]/30 bg-[#0A1A2F] text-white px-3 py-2 focus:border-[#00E5FF] focus:outline-none focus:ring-2 focus:ring-[#00E5FF]/50"
+                  />
+                  <p className="mt-1 text-xs text-[#8FA3AD]">Enter distance in kilometers</p>
+                </div>
+              )}
             </div>
 
             <div>

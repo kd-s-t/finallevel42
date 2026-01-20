@@ -67,7 +67,7 @@ export async function GET() {
         SELECT week_number, day_name FROM training_sessions WHERE user_id = ${user.id}
       `;
       const existingKeys = new Set(
-        existingSessions.map((s: any) => `${s.week_number}-${s.day_name}`)
+        existingSessions.map((s: { week_number: number; day_name: string }) => `${s.week_number}-${s.day_name}`)
       );
 
       // Only insert missing sessions
@@ -143,7 +143,17 @@ export async function GET() {
           WHEN 'Sun' THEN 7
         END
     `;
-    sessions = result.map((s: any) => ({
+    sessions = result.map((s: {
+      week_number: number;
+      week_range: string;
+      day_name: string;
+      date: string;
+      time: string;
+      session_type: string;
+      details: string;
+      completed: boolean;
+      completed_at: string | null;
+    }) => ({
       ...s,
       completed: s.completed ? 1 : 0, // Convert boolean to number for consistency
     }));

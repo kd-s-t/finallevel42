@@ -1,5 +1,3 @@
-# 42km Trainer
-
 ![FinalLevel 42 Logo](./public/logo2.png)
 
 ## Getting Started

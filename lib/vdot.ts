@@ -11,14 +11,14 @@ export interface TrainingPaces {
 
 // Standard race distances in meters
 export const RACE_DISTANCES = {
-  1500: 1500,
-  1600: 1609.34, // 1 mile
-  3000: 3000,
-  3200: 3218.69, // 2 miles
-  5000: 5000,
-  10000: 10000,
-  21097: 21097.5, // Half marathon
-  42195: 42195, // Marathon
+  '1500': 1500,
+  '1600': 1609.34, // 1 mile
+  '3000': 3000,
+  '3200': 3218.69, // 2 miles
+  '5000': 5000,
+  '10000': 10000,
+  '21097': 21097.5, // Half marathon
+  '42195': 42195, // Marathon
 } as const;
 
 export type RaceDistance = keyof typeof RACE_DISTANCES;
