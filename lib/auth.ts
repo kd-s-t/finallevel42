@@ -5,6 +5,7 @@ import { cookies } from 'next/headers';
 export interface User {
   id: number;
   username: string;
+  vdot?: number | null;
 }
 
 export async function hashPassword(password: string): Promise<string> {
@@ -63,13 +64,13 @@ export async function getCurrentUser(): Promise<User | null> {
 
   if (useNeon) {
     const result = await sql`
-      SELECT id, username FROM users WHERE id = ${Number(userId)}
+      SELECT id, username, vdot FROM users WHERE id = ${Number(userId)}
     `;
-    return result[0] || null;
+    return result[0] ? { id: result[0].id, username: result[0].username, vdot: result[0].vdot } : null;
   } else {
-    const stmt = db.prepare('SELECT id, username FROM users WHERE id = ?');
-    const user = stmt.get(Number(userId)) as User | undefined;
-    return user || null;
+    const stmt = db.prepare('SELECT id, username, vdot FROM users WHERE id = ?');
+    const user = stmt.get(Number(userId)) as (User & { vdot: number | null }) | undefined;
+    return user ? { id: user.id, username: user.username, vdot: user.vdot } : null;
   }
 }
 

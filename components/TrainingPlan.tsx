@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
+import BottomNav from './BottomNav';
 
 interface TrainingSession {
   week_number: number;
@@ -289,7 +290,7 @@ export default function TrainingPlan() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
-      className="min-h-screen bg-[#0A1A2F] py-4 sm:py-8"
+      className="min-h-screen bg-[#0A1A2F] py-4 sm:py-8 pb-20 sm:pb-8"
     >
       <div className="mx-auto max-w-4xl px-3 sm:px-4">
         <motion.div
@@ -481,6 +482,7 @@ export default function TrainingPlan() {
           ))}
         </motion.div>
       </div>
+      <BottomNav />
     </motion.div>
   );
 }

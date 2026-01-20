@@ -38,8 +38,14 @@ export async function initDb() {
         id SERIAL PRIMARY KEY,
         username TEXT UNIQUE NOT NULL,
         password TEXT NOT NULL,
+        vdot REAL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
+    `;
+
+    // Add vdot column if it doesn't exist (for existing databases)
+    await sql`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS vdot REAL
     `;
 
     await sql`
@@ -71,9 +77,20 @@ export async function initDb() {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE NOT NULL,
         password TEXT NOT NULL,
+        vdot REAL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+    // Add vdot column if it doesn't exist (for existing databases)
+    try {
+      db.exec(`ALTER TABLE users ADD COLUMN vdot REAL`);
+    } catch (e: any) {
+      // Column already exists, ignore error
+      if (!e.message?.includes('duplicate column')) {
+        console.error('Error adding vdot column:', e);
+      }
+    }
 
     db.exec(`
       CREATE TABLE IF NOT EXISTS training_sessions (
