@@ -37,8 +37,8 @@ export default function LoginPage() {
         return;
       }
 
-      router.push('/');
-      router.refresh();
+      // Use full page reload to ensure cookies are available
+      window.location.href = '/';
     } catch (err) {
       setError('An error occurred. Please try again.');
       setLoading(false);

@@ -32,8 +32,7 @@ export default function TrainingPlan() {
   const router = useRouter();
 
   useEffect(() => {
-    checkAuth();
-    loadSessions();
+    initializeApp();
     calculateDaysUntilRace();
   }, []);
 
@@ -60,33 +59,66 @@ export default function TrainingPlan() {
     });
   };
 
-  const checkAuth = async () => {
-    try {
-      const response = await fetch('/api/auth/me');
-      const data = await response.json();
-      if (!data.user) {
-        router.push('/login');
-        return;
-      }
-      setUser(data.user);
-    } catch (error) {
-      router.push('/login');
+  const initializeApp = async () => {
+    // Small delay to ensure cookies are available after login redirect
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // First check authentication, then load sessions
+    const authSuccess = await checkAuth();
+    if (authSuccess) {
+      await loadSessions();
     }
   };
 
-  const loadSessions = async () => {
+  const checkAuth = async (): Promise<boolean> => {
     try {
-      const response = await fetch('/api/training');
+      const response = await fetch('/api/auth/me', {
+        credentials: 'include',
+        cache: 'no-store',
+      });
+      const data = await response.json();
+      if (!data.user) {
+        router.push('/login');
+        return false;
+      }
+      setUser(data.user);
+      return true;
+    } catch (error) {
+      router.push('/login');
+      return false;
+    }
+  };
+
+  const loadSessions = async (retryCount = 0) => {
+    try {
+      const response = await fetch('/api/training', {
+        credentials: 'include',
+        cache: 'no-store',
+      });
+      
       if (response.status === 401) {
         router.push('/login');
         return;
       }
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch sessions: ${response.status}`);
+      }
+
       const data = await response.json();
-      setSessions(data.sessions);
+      
+      // If no sessions exist, the API should have created them
+      // If still empty after a brief delay, retry once
+      if ((!data.sessions || data.sessions.length === 0) && retryCount < 1) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        return loadSessions(retryCount + 1);
+      }
+
+      setSessions(data.sessions || []);
       
       // Auto-collapse weeks that are fully completed
       const weekMap = new Map<number, TrainingSession[]>();
-      data.sessions.forEach((session: TrainingSession) => {
+      (data.sessions || []).forEach((session: TrainingSession) => {
         if (!weekMap.has(session.week_number)) {
           weekMap.set(session.week_number, []);
         }
@@ -109,6 +141,11 @@ export default function TrainingPlan() {
       });
     } catch (error) {
       console.error('Failed to load sessions:', error);
+      // If it's the first try and we get an error, wait a bit and retry once
+      if (retryCount < 1) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return loadSessions(retryCount + 1);
+      }
     } finally {
       setLoading(false);
     }
@@ -121,6 +158,7 @@ export default function TrainingPlan() {
       const response = await fetch('/api/training', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           weekNumber,
           dayName,
@@ -158,7 +196,10 @@ export default function TrainingPlan() {
   };
 
   const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
+    await fetch('/api/auth/logout', { 
+      method: 'POST',
+      credentials: 'include',
+    });
     router.push('/login');
     router.refresh();
   };
